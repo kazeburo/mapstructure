@@ -200,6 +200,11 @@ type DecoderConfig struct {
 	// (extra keys).
 	ErrorUnused bool
 
+	//based on https://github.com/mitchellh/mapstructure/pull/27
+	// If ErrorUnset is true, then it is an error for there to exist fields in a struct that
+	// were not populated in the decoding process.
+	ErrorUnsetFields bool
+
 	// ZeroFields, if set to true, will zero fields before writing them.
 	// For example, a map will be emptied before decoded values are put in
 	// it. If this is false, a map will be merged.
@@ -1328,8 +1333,11 @@ func (d *Decoder) decodeStructFromMap(name string, dataVal, val reflect.Value) e
 			}
 
 			if !rawMapVal.IsValid() {
-				// There was no matching key in the map for the value in
-				// the struct. Just ignore.
+				// the struct. Just ignore, unless configured to produce an error.
+				// Pointer fields are treated as optional.
+				if d.config.ErrorUnsetFields {
+					errors = appendErrors(errors, fmt.Errorf("unset struct key: %s", fieldName))
+				}
 				continue
 			}
 		}
