@@ -178,6 +178,11 @@ type UnsetFields struct {
 	Value       string `mapstructure:"foo"`
 }
 
+type UnsetFieldsPtr struct {
+	RequiredBar *string `mapstructure:"bar"`
+	Value       string  `mapstructure:"foo"`
+}
+
 type TypeConversionResult struct {
 	IntToFloat         float32
 	IntToUint          uint
@@ -2462,7 +2467,6 @@ func TestUnsetFields(t *testing.T) {
 		"foo": "bar",
 	}
 	var result UnsetFields
-
 	config := &DecoderConfig{
 		ErrorUnsetFields: true,
 		Result:           &result,
@@ -2471,10 +2475,26 @@ func TestUnsetFields(t *testing.T) {
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
-
 	err = decoder.Decode(input)
 	if err == nil {
 		t.Fatal("unexpected success decoding required field was missing")
+	}
+
+	var result2 UnsetFieldsPtr
+	config = &DecoderConfig{
+		ErrorUnsetFields: true,
+		Result:           &result2,
+	}
+	decoder, err = NewDecoder(config)
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+	err = decoder.Decode(input)
+	if err != nil {
+		t.Fatal("unexpected error in decoding. skip ptr field")
+	}
+	if result2.RequiredBar != nil {
+		t.Fatal("unexpected unrequired bvalue in decoding")
 	}
 }
 
